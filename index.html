@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Toolbox: Read / Merge / Split / Edit</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .tabs {
+            display: flex;
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 1em;
+            font-weight: 500;
+            color: #666;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            background: #e0e0e0;
+        }
+
+        .tab.active {
+            background: white;
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e8ebff;
+            border-color: #764ba2;
+            transform: scale(1.02);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .file-list {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+
+        .file-item h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .preview-container {
+            margin-top: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        .pdf-preview {
+            width: 100%;
+            min-height: 500px;
+            border: none;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .sidebar h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            padding: 8px 0;
+            color: #666;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        .order-input {
+            width: 80px;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+        }
+
+        .metadata-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .metadata-display p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .text-extract {
+            margin-top: 15px;
+        }
+
+        .text-extract textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .expander {
+            margin-top: 15px;
+        }
+
+        .expander-header {
+            cursor: pointer;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 6px;
+            font-weight: 500;
+        }
+
+        .expander-content {
+            display: none;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+        }
+
+        .expander-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            .tabs {
+                flex-wrap: wrap;
+            }
+            .tab {
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📄 PDF Toolbox</h1>
+            <p>Read/Preview (drag & drop multiple files), Merge, Split, Reorder/Delete, Rotate, Encrypt, Metadata — Lightweight and ready to use</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(0)">📖 Read/Preview</button>
+            <button class="tab" onclick="switchTab(1)">🔗 Merge</button>
+            <button class="tab" onclick="switchTab(2)">✂️ Split/Extract</button>
+            <button class="tab" onclick="switchTab(3)">🧩 Reorder & Delete</button>
+            <button class="tab" onclick="switchTab(4)">🌀 Rotate Pages</button>
+            <button class="tab" onclick="switchTab(5)">🔒 Encrypt</button>
+            <button class="tab" onclick="switchTab(6)">🧾 Metadata</button>
+        </div>
+
+        <!-- Tab 0: Read/Preview -->
+        <div id="tab-0" class="tab-content active">
+            <h2>Read / Preview Multiple PDFs (Drag & Drop)</h2>
+            <div class="upload-area" id="read-upload-area">
+                <p style="font-size: 1.2em; margin-bottom: 10px;">📎 Drag multiple PDFs here or click to select (multiple files supported)</p>
+                <input type="file" id="read-files" class="file-input" multiple accept=".pdf">
+            </div>
+            <div id="read-file-list" class="file-list"></div>
+        </div>
+
+        <!-- Tab 1: Merge -->
+        <div id="tab-1" class="tab-content">
+            <h2>Merge Multiple PDFs</h2>
+            <div class="upload-area" id="merge-upload-area">
+                <p style="font-size: 1.2em; margin-bottom: 10px;">📎 Upload multiple PDFs (multiple selection supported)</p>
+                <input type="file" id="merge-files" class="file-input" multiple accept=".pdf">
+            </div>
+            <div id="merge-file-list"></div>
+            <div id="merge-controls" style="display: none;">
+                <div class="alert alert-info">To adjust order: Enter the sequence number for each file below (starting from 1), smaller numbers come first.</div>
+                <div id="merge-order-inputs"></div>
+                <button class="btn btn-primary" onclick="mergePdfs()" style="margin-top: 20px;">Merge PDFs</button>
+            </div>
+        </div>
+
+        <!-- Tab 2: Split/Extract -->
+        <div id="tab-2" class="tab-content">
+            <h2>Split / Extract Pages</h2>
+            <div class="upload-area" id="split-upload-area">
+                <p style="font-size: 1.2em; margin-bottom: 10px;">📎 Upload a PDF</p>
+                <input type="file" id="split-file" class="file-input" accept=".pdf">
+            </div>
+            <div id="split-controls" style="display: none;">
+                <div class="form-group">
+                    <label>Enter page numbers or ranges (e.g., 1-3,5,7-9)</label>
+                    <input type="text" id="split-ranges" placeholder="1-3,5,7-9">
+                </div>
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="extractPages()">Extract as New PDF</button>
+                    <button class="btn btn-secondary" onclick="deletePages()">Delete These Pages & Export</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab 3: Reorder & Delete -->
+        <div id="tab-3" class="tab-content">
+            <h2>Reorder Pages / Batch Delete</h2>
+            <div class="upload-area" id="reorder-upload-area">
+                <p style="font-size: 1.2em; margin-bottom: 10px;">📎 Upload a PDF</p>
+                <input type="file" id="reorder-file" class="file-input" accept=".pdf">
+            </div>
+            <div id="reorder-controls" style="display: none;">
+                <div class="form-group">
+                    <label><strong>Delete Pages</strong> (starting from 1, comma or space separated, e.g., 2 4 10)</label>
+                    <input type="text" id="reorder-delete" placeholder="2 4 10">
+                </div>
+                <div class="form-group">
+                    <label><strong>Reorder</strong>: Specify the page order for export (starting from 1). Leave empty to keep original order (after deletion). E.g., 1-3,7,5-4 (reverse order supported)</label>
+                    <input type="text" id="reorder-order" placeholder="1-3,7,5-4">
+                </div>
+                <button class="btn btn-primary" onclick="reorderPdf()">Export Reordered/Deleted PDF</button>
+            </div>
+        </div>
+
+        <!-- Tab 4: Rotate -->
+        <div id="tab-4" class="tab-content">
+            <h2>Rotate Pages (90/180/270)</h2>
+            <div class="upload-area" id="rotate-upload-area">
+                <p style="font-size: 1.2em; margin-bottom: 10px;">📎 Upload a PDF</p>
+                <input type="file" id="rotate-file" class="file-input" accept=".pdf">
+            </div>
+            <div id="rotate-controls" style="display: none;">
+                <div class="form-group">
+                    <label>Rotation Angle</label>
+                    <select id="rotate-angle">
+                        <option value="90">90°</option>
+                        <option value="180">180°</option>
+                        <option value="270">270°</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Pages to rotate (starting from 1, e.g., 2-5,7)</label>
+                    <input type="text" id="rotate-pages" placeholder="2-5,7">
+                </div>
+                <button class="btn btn-primary" onclick="rotatePdf()">Rotate & Export</button>
+            </div>
+        </div>
+
+        <!-- Tab 5: Encrypt -->
+        <div id="tab-5" class="tab-content">
+            <h2>Encrypt (Set Open Password)</h2>
+            <div class="upload-area" id="encrypt-upload-area">
+                <p style="font-size: 1.2em; margin-bottom: 10px;">📎 Upload a PDF</p>
+                <input type="file" id="encrypt-file" class="file-input" accept=".pdf">
+            </div>
+            <div id="encrypt-controls" style="display: none;">
+                <div class="form-group">
+                    <label>User Password (required to open file)</label>
+                    <input type="password" id="encrypt-user-pwd" placeholder="Enter password">
+                </div>
+                <div class="form-group">
+                    <label>Owner Password (optional)</label>
+                    <input type="password" id="encrypt-owner-pwd" placeholder="Enter owner password (optional)">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="encrypt-allow-print" checked> Allow Printing
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="encrypt-allow-copy"> Allow Copying
+                    </label>
+                </div>
+                <button class="btn btn-primary" onclick="encryptPdf()">Encrypt & Export</button>
+            </div>
+        </div>
+
+        <!-- Tab 6: Metadata -->
+        <div id="tab-6" class="tab-content">
+            <h2>View / Edit Metadata</h2>
+            <div class="upload-area" id="meta-upload-area">
+                <p style="font-size: 1.2em; margin-bottom: 10px;">📎 Upload a PDF</p>
+                <input type="file" id="meta-file" class="file-input" accept=".pdf">
+            </div>
+            <div id="meta-display"></div>
+            <div id="meta-controls" style="display: none;">
+                <h3 style="margin-top: 20px;">Edit Metadata (Optional)</h3>
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="meta-title">
+                </div>
+                <div class="form-group">
+                    <label>Author</label>
+                    <input type="text" id="meta-author">
+                </div>
+                <div class="form-group">
+                    <label>Subject</label>
+                    <input type="text" id="meta-subject">
+                </div>
+                <div class="form-group">
+                    <label>Keywords</label>
+                    <input type="text" id="meta-keywords">
+                </div>
+                <div class="form-group">
+                    <label>Producer</label>
+                    <input type="text" id="meta-producer">
+                </div>
+                <div class="form-group">
+                    <label>Creator</label>
+                    <input type="text" id="meta-creator">
+                </div>
+                <button class="btn btn-primary" onclick="updateMetadata()">Save & Export</button>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h3>Usage Tips</h3>
+            <ul>
+                <li>Page numbers start from <strong>1</strong>.</li>
+                <li>Split example: <code>1-3, 5, 7-9</code>.</li>
+                <li>Reorder supports <strong>reverse order</strong>: e.g., <code>10-7</code> means 10,9,8,7.</li>
+                <li>Encryption: If owner password is not provided, it defaults to the user password.</li>
+                <li>For scanned documents/images, text extraction may be empty.</li>
+                <li>Password-protected PDFs need to be decrypted first before processing.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Set PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Global state
+        let readFiles = [];
+        let mergeFiles = [];
+        let currentPdf = null;
+        let currentPdfBytes = null;
+        let currentPdfName = '';
+
+        // Tab switching
+        function switchTab(index) {
+            document.querySelectorAll('.tab').forEach((tab, i) => {
+                tab.classList.toggle('active', i === index);
+            });
+            document.querySelectorAll('.tab-content').forEach((content, i) => {
+                content.classList.toggle('active', i === index);
+            });
+        }
+
+        // Parse page ranges
+        function parsePageRanges(rangesStr, maxPage) {
+            if (!rangesStr.trim()) return [];
+            const pages = new Set();
+            const tokens = rangesStr.trim().split(/[,\s]+/);
+            for (const tok of tokens) {
+                if (!tok) continue;
+                if (tok.includes('-')) {
+                    const [a, b] = tok.split('-', 2);
+                    const start = parseInt(a);
+                    const end = parseInt(b);
+                    if (isNaN(start) || isNaN(end) || start < 1 || end < 1 || start > maxPage || end > maxPage || start > end) {
+                        throw new Error(`Invalid range: ${tok}`);
+                    }
+                    for (let p = start - 1; p < end; p++) {
+                        pages.add(p);
+                    }
+                } else {
+                    const p = parseInt(tok);
+                    if (isNaN(p) || p < 1 || p > maxPage) {
+                        throw new Error(`Page number out of range: ${p}`);
+                    }
+                    pages.add(p - 1);
+                }
+            }
+            return Array.from(pages).sort((a, b) => a - b);
+        }
+
+        // Parse reorder (supports reverse ranges)
+        function parseReorder(rangesStr, maxPage) {
+            if (!rangesStr.trim()) return [];
+            const seq = [];
+            const tokens = rangesStr.trim().split(/[,\s]+/);
+            for (const tok of tokens) {
+                if (!tok) continue;
+                if (tok.includes('-')) {
+                    const [a, b] = tok.split('-', 2);
+                    const start = parseInt(a);
+                    const end = parseInt(b);
+                    if (isNaN(start) || isNaN(end) || start < 1 || end < 1 || start > maxPage || end > maxPage) {
+                        throw new Error(`Page range out of bounds: ${tok}`);
+                    }
+                    if (start <= end) {
+                        for (let p = start - 1; p < end; p++) {
+                            seq.push(p);
+                        }
+                    } else {
+                        for (let p = start - 1; p >= end - 1; p--) {
+                            seq.push(p);
+                        }
+                    }
+                } else {
+                    const p = parseInt(tok);
+                    if (isNaN(p) || p < 1 || p > maxPage) {
+                        throw new Error(`Page number out of range: ${p}`);
+                    }
+                    seq.push(p - 1);
+                }
+            }
+            return seq;
+        }
+
+        // File to ArrayBuffer
+        async function fileToArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Get page count
+        async function getPageCount(pdfBytes) {
+            const pdf = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+            return pdf.numPages;
+        }
+
+        // Preview PDF
+        async function previewPdf(pdfBytes, containerId, height = 700) {
+            const container = document.getElementById(containerId);
+            const pdf = await pdfjsLib.getDocument({ data: pdfBytes }).promise;
+            const page = await pdf.getPage(1);
+            const viewport = page.getViewport({ scale: 1.5 });
+            
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({
+                canvasContext: context,
+                viewport: viewport
+            }).promise;
+
+            // Create iframe for full PDF preview
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const iframe = document.createElement('iframe');
+            iframe.src = url;
+            iframe.className = 'pdf-preview';
+            iframe.style.height = height + 'px';
+            container.innerHTML = '';
+            container.appendChild(iframe);
+        }
+
+        // Download file
+        function downloadFile(data, filename) {
+            const blob = new Blob([data], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Tab 0: Read/Preview
+        document.getElementById('read-upload-area').addEventListener('click', () => {
+            document.getElementById('read-files').click();
+        });
+
+        document.getElementById('read-files').addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            readFiles = [];
+            const list = document.getElementById('read-file-list');
+            list.innerHTML = '';
+
+            for (const file of files) {
+                try {
+                    const bytes = await fileToArrayBuffer(file);
+                    const pageCount = await getPageCount(bytes);
+                    readFiles.push({ name: file.name, bytes, pageCount });
+
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    item.innerHTML = `
+                        <h3>${file.name} · ${pageCount} pages</h3>
+                        <div class="controls">
+                            <label>Preview Height (px): <input type="range" min="400" max="1200" value="700" step="50" 
+                                oninput="updatePreviewHeight('${file.name}', this.value)"></label>
+                            <button class="btn btn-success" onclick="downloadFile(readFiles.find(f => f.name === '${file.name}').bytes, '${file.name}')">⬇️ Download Original</button>
+                        </div>
+                        <div class="preview-container" id="preview-${file.name}"></div>
+                        <div class="expander">
+                            <div class="expander-header" onclick="toggleExpander('extract-${file.name}')">🧩 Extract Text (Optional)</div>
+                            <div class="expander-content" id="extract-${file.name}">
+                                <p style="margin: 10px 0; color: #666;">Enter page numbers/ranges (starting from 1, e.g., 1-3,5 or 10-8 supports reverse order)</p>
+                                <input type="text" id="extract-ranges-${file.name}" placeholder="1-3,5" style="width: 100%; padding: 8px; margin-bottom: 10px;">
+                                <button class="btn btn-primary" onclick="extractText('${file.name}')">Extract Text</button>
+                                <div id="extract-result-${file.name}" style="margin-top: 10px;"></div>
+                            </div>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                    await previewPdf(bytes, `preview-${file.name}`, 700);
+                } catch (error) {
+                    const item = document.createElement('div');
+                    item.className = 'alert alert-error';
+                    item.textContent = `❌ ${file.name} read failed: ${error.message}`;
+                    list.appendChild(item);
+                }
+            }
+        });
+
+        function updatePreviewHeight(fileName, height) {
+            const container = document.getElementById(`preview-${fileName}`);
+            const iframe = container.querySelector('iframe');
+            if (iframe) {
+                iframe.style.height = height + 'px';
+            }
+        }
+
+        function toggleExpander(id) {
+            const content = document.getElementById(id);
+            content.classList.toggle('active');
+        }
+
+        async function extractText(fileName) {
+            const file = readFiles.find(f => f.name === fileName);
+            if (!file) return;
+
+            const rangesStr = document.getElementById(`extract-ranges-${fileName}`).value;
+            const resultDiv = document.getElementById(`extract-result-${fileName}`);
+
+            try {
+                let pageIndices = [];
+                if (rangesStr.trim()) {
+                    pageIndices = parseReorder(rangesStr, file.pageCount);
+                } else {
+                    pageIndices = Array.from({ length: file.pageCount }, (_, i) => i);
+                }
+
+                const pdf = await pdfjsLib.getDocument({ data: file.bytes }).promise;
+                let text = '';
+                for (const idx of pageIndices) {
+                    if (idx >= 0 && idx < file.pageCount) {
+                        try {
+                            const page = await pdf.getPage(idx + 1);
+                            const textContent = await page.getTextContent();
+                            text += textContent.items.map(item => item.str).join(' ') + '\n';
+                        } catch (e) {
+                            text += '\n';
+                        }
+                    }
+                }
+
+                const textContent = text.trim() || '(No extractable text, may be a scanned document or image)';
+                resultDiv.innerHTML = `
+                    <textarea readonly style="width: 100%; min-height: 200px; padding: 10px; margin-top: 10px;">${textContent}</textarea>
+                    <button class="btn btn-success" onclick="downloadText('${fileName}', \`${textContent.replace(/`/g, '\\`')}\`)">⬇️ Download as .txt</button>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="alert alert-error">Parse failed: ${error.message}</div>`;
+            }
+        }
+
+        function downloadText(fileName, text) {
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName.replace('.pdf', '_extract.txt');
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Tab 1: Merge
+        document.getElementById('merge-upload-area').addEventListener('click', () => {
+            document.getElementById('merge-files').click();
+        });
+
+        document.getElementById('merge-files').addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            mergeFiles = [];
+            const list = document.getElementById('merge-file-list');
+            list.innerHTML = '';
+
+            for (const file of files) {
+                try {
+                    const bytes = await fileToArrayBuffer(file);
+                    const pageCount = await getPageCount(bytes);
+                    mergeFiles.push({ name: file.name, bytes, pageCount });
+                } catch (error) {
+                    const item = document.createElement('div');
+                    item.className = 'alert alert-error';
+                    item.textContent = `Read failed: ${file.name} may be corrupted or password-protected`;
+                    list.appendChild(item);
+                }
+            }
+
+            if (mergeFiles.length > 0) {
+                const table = document.createElement('table');
+                table.style.width = '100%';
+                table.style.borderCollapse = 'collapse';
+                table.style.marginBottom = '20px';
+                table.innerHTML = '<tr><th style="padding: 10px; border: 1px solid #ddd;">File Name</th><th style="padding: 10px; border: 1px solid #ddd;">Pages</th></tr>';
+                mergeFiles.forEach(f => {
+                    const row = table.insertRow();
+                    const cell1 = row.insertCell(0);
+                    cell1.textContent = f.name;
+                    cell1.style.padding = '10px';
+                    cell1.style.border = '1px solid #ddd';
+                    const cell2 = row.insertCell(1);
+                    cell2.textContent = f.pageCount;
+                    cell2.style.padding = '10px';
+                    cell2.style.border = '1px solid #ddd';
+                });
+                list.appendChild(table);
+
+                const orderDiv = document.getElementById('merge-order-inputs');
+                orderDiv.innerHTML = '';
+                mergeFiles.forEach((f, i) => {
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.className = 'order-input';
+                    input.min = 1;
+                    input.max = mergeFiles.length;
+                    input.value = i + 1;
+                    input.dataset.index = i;
+                    orderDiv.appendChild(document.createTextNode(`${f.name}: `));
+                    orderDiv.appendChild(input);
+                    orderDiv.appendChild(document.createElement('br'));
+                });
+                document.getElementById('merge-controls').style.display = 'block';
+            }
+        });
+
+        async function mergePdfs() {
+            if (mergeFiles.length === 0) return;
+
+            const orderInputs = document.querySelectorAll('#merge-order-inputs input');
+            const order = [];
+            orderInputs.forEach((input, i) => {
+                order.push({ order: parseInt(input.value), index: parseInt(input.dataset.index) });
+            });
+            order.sort((a, b) => a.order - b.order);
+
+            try {
+                const { PDFDocument } = PDFLib;
+                const mergedPdf = await PDFDocument.create();
+
+                for (const item of order) {
+                    const file = mergeFiles[item.index];
+                    const pdf = await PDFDocument.load(file.bytes);
+                    const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    pages.forEach(page => mergedPdf.addPage(page));
+                }
+
+                const pdfBytes = await mergedPdf.save();
+                const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                downloadFile(pdfBytes, `merged_${timestamp}.pdf`);
+            } catch (error) {
+                alert('Merge failed: ' + error.message);
+            }
+        }
+
+        // Tab 2: Split/Extract
+        document.getElementById('split-upload-area').addEventListener('click', () => {
+            document.getElementById('split-file').click();
+        });
+
+        document.getElementById('split-file').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                currentPdfBytes = await fileToArrayBuffer(file);
+                currentPdfName = file.name;
+                const pageCount = await getPageCount(currentPdfBytes);
+                document.getElementById('split-controls').innerHTML = `
+                    <div class="alert alert-success">File: ${file.name} (${pageCount} pages)</div>
+                    <div class="form-group">
+                        <label>Enter page numbers or ranges (e.g., 1-3,5,7-9)</label>
+                        <input type="text" id="split-ranges" placeholder="1-3,5,7-9">
+                    </div>
+                    <div class="controls">
+                        <button class="btn btn-primary" onclick="extractPages()">Extract as New PDF</button>
+                        <button class="btn btn-secondary" onclick="deletePages()">Delete These Pages & Export</button>
+                    </div>
+                `;
+                document.getElementById('split-controls').style.display = 'block';
+            } catch (error) {
+                alert('Read failed: File may be corrupted or password-protected.');
+            }
+        });
+
+        async function extractPages() {
+            if (!currentPdfBytes) return;
+            const rangesStr = document.getElementById('split-ranges').value;
+
+            try {
+                const pageCount = await getPageCount(currentPdfBytes);
+                const pageIndices = parsePageRanges(rangesStr, pageCount);
+                if (pageIndices.length === 0) {
+                    alert('No page range specified.');
+                    return;
+                }
+
+                const { PDFDocument } = PDFLib;
+                const pdf = await PDFDocument.load(currentPdfBytes);
+                const newPdf = await PDFDocument.create();
+                const pages = await newPdf.copyPages(pdf, pageIndices);
+                pages.forEach(page => newPdf.addPage(page));
+
+                const pdfBytes = await newPdf.save();
+                downloadFile(pdfBytes, currentPdfName.replace('.pdf', '_extract.pdf'));
+            } catch (error) {
+                alert('Parse failed: ' + error.message);
+            }
+        }
+
+        async function deletePages() {
+            if (!currentPdfBytes) return;
+            const rangesStr = document.getElementById('split-ranges').value;
+
+            try {
+                const pageCount = await getPageCount(currentPdfBytes);
+                const pageIndices = parsePageRanges(rangesStr, pageCount);
+                if (pageIndices.length === 0) {
+                    alert('No page range specified.');
+                    return;
+                }
+
+                const { PDFDocument } = PDFLib;
+                const pdf = await PDFDocument.load(currentPdfBytes);
+                const newPdf = await PDFDocument.create();
+                const allIndices = Array.from({ length: pageCount }, (_, i) => i);
+                const keepIndices = allIndices.filter(i => !pageIndices.includes(i));
+                const pages = await newPdf.copyPages(pdf, keepIndices);
+                pages.forEach(page => newPdf.addPage(page));
+
+                const pdfBytes = await newPdf.save();
+                downloadFile(pdfBytes, currentPdfName.replace('.pdf', '_deleted.pdf'));
+            } catch (error) {
+                alert('Parse failed: ' + error.message);
+            }
+        }
+
+        // Tab 3: Reorder/Delete
+        document.getElementById('reorder-upload-area').addEventListener('click', () => {
+            document.getElementById('reorder-file').click();
+        });
+
+        document.getElementById('reorder-file').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                currentPdfBytes = await fileToArrayBuffer(file);
+                currentPdfName = file.name;
+                const pageCount = await getPageCount(currentPdfBytes);
+                document.getElementById('reorder-controls').innerHTML = `
+                    <div class="alert alert-success">File: ${file.name} (${pageCount} pages)</div>
+                    <div class="form-group">
+                        <label><strong>Delete Pages</strong> (starting from 1, comma or space separated, e.g., 2 4 10)</label>
+                        <input type="text" id="reorder-delete" placeholder="2 4 10">
+                    </div>
+                    <div class="form-group">
+                        <label><strong>Reorder</strong>: Specify the page order for export (starting from 1). Leave empty to keep original order (after deletion). E.g., 1-3,7,5-4 (reverse order supported)</label>
+                        <input type="text" id="reorder-order" placeholder="1-3,7,5-4">
+                    </div>
+                    <button class="btn btn-primary" onclick="reorderPdf()">Export Reordered/Deleted PDF</button>
+                `;
+                document.getElementById('reorder-controls').style.display = 'block';
+            } catch (error) {
+                alert('Read failed: File may be corrupted or password-protected.');
+            }
+        });
+
+        async function reorderPdf() {
+            if (!currentPdfBytes) return;
+            const deleteStr = document.getElementById('reorder-delete').value;
+            const orderStr = document.getElementById('reorder-order').value;
+
+            try {
+                const pageCount = await getPageCount(currentPdfBytes);
+                let deleteSet = new Set();
+                if (deleteStr.trim()) {
+                    deleteSet = new Set(parsePageRanges(deleteStr.replace(/,/g, ' '), pageCount));
+                }
+
+                let afterDeleteIndices = Array.from({ length: pageCount }, (_, i) => i)
+                    .filter(i => !deleteSet.has(i));
+
+                let finalIndices = afterDeleteIndices;
+                if (orderStr.trim()) {
+                    const reorderIndices = parseReorder(orderStr, pageCount);
+                    finalIndices = reorderIndices.filter(i => afterDeleteIndices.includes(i));
+                }
+
+                if (finalIndices.length === 0) {
+                    alert('No pages to export.');
+                    return;
+                }
+
+                const { PDFDocument } = PDFLib;
+                const pdf = await PDFDocument.load(currentPdfBytes);
+                const newPdf = await PDFDocument.create();
+                const pages = await newPdf.copyPages(pdf, finalIndices);
+                pages.forEach(page => newPdf.addPage(page));
+
+                const pdfBytes = await newPdf.save();
+                downloadFile(pdfBytes, currentPdfName.replace('.pdf', '_reordered.pdf'));
+            } catch (error) {
+                alert('Process failed: ' + error.message);
+            }
+        }
+
+        // Tab 4: Rotate
+        document.getElementById('rotate-upload-area').addEventListener('click', () => {
+            document.getElementById('rotate-file').click();
+        });
+
+        document.getElementById('rotate-file').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                currentPdfBytes = await fileToArrayBuffer(file);
+                currentPdfName = file.name;
+                const pageCount = await getPageCount(currentPdfBytes);
+                document.getElementById('rotate-controls').innerHTML = `
+                    <div class="alert alert-success">File: ${file.name} (${pageCount} pages)</div>
+                    <div class="form-group">
+                        <label>Rotation Angle</label>
+                        <select id="rotate-angle">
+                            <option value="90">90°</option>
+                            <option value="180">180°</option>
+                            <option value="270">270°</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Pages to rotate (starting from 1, e.g., 2-5,7)</label>
+                        <input type="text" id="rotate-pages" placeholder="2-5,7">
+                    </div>
+                    <button class="btn btn-primary" onclick="rotatePdf()">Rotate & Export</button>
+                `;
+                document.getElementById('rotate-controls').style.display = 'block';
+            } catch (error) {
+                alert('Read failed: File may be corrupted or password-protected.');
+            }
+        });
+
+        async function rotatePdf() {
+            if (!currentPdfBytes) return;
+            const angle = parseInt(document.getElementById('rotate-angle').value);
+            const pagesStr = document.getElementById('rotate-pages').value;
+
+            try {
+                const pageCount = await getPageCount(currentPdfBytes);
+                const pageIndices = parsePageRanges(pagesStr, pageCount);
+                if (pageIndices.length === 0) {
+                    alert('No pages specified, no rotation will be performed.');
+                    return;
+                }
+
+                const { PDFDocument, degrees } = PDFLib;
+                const pdf = await PDFDocument.load(currentPdfBytes);
+                const pages = pdf.getPages();
+                pageIndices.forEach(idx => {
+                    if (idx >= 0 && idx < pages.length) {
+                        pages[idx].setRotation(degrees(angle));
+                    }
+                });
+
+                const pdfBytes = await pdf.save();
+                downloadFile(pdfBytes, currentPdfName.replace('.pdf', '_rotated.pdf'));
+            } catch (error) {
+                alert('Parse failed: ' + error.message);
+            }
+        }
+
+        // Tab 5: Encrypt
+        document.getElementById('encrypt-upload-area').addEventListener('click', () => {
+            document.getElementById('encrypt-file').click();
+        });
+
+        document.getElementById('encrypt-file').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                currentPdfBytes = await fileToArrayBuffer(file);
+                currentPdfName = file.name;
+                await getPageCount(currentPdfBytes);
+                document.getElementById('encrypt-controls').style.display = 'block';
+            } catch (error) {
+                alert('Read failed: File may be corrupted or password-protected.');
+            }
+        });
+
+        async function encryptPdf() {
+            if (!currentPdfBytes) return;
+            const userPwd = document.getElementById('encrypt-user-pwd').value;
+            const ownerPwd = document.getElementById('encrypt-owner-pwd').value || userPwd;
+            const allowPrint = document.getElementById('encrypt-allow-print').checked;
+            const allowCopy = document.getElementById('encrypt-allow-copy').checked;
+
+            if (!userPwd) {
+                alert('Please set a user password.');
+                return;
+            }
+
+            try {
+                const { PDFDocument } = PDFLib;
+                const pdf = await PDFDocument.load(currentPdfBytes);
+                const pdfBytes = await pdf.save({
+                    useObjectStreams: false,
+                    userPassword: userPwd,
+                    ownerPassword: ownerPwd,
+                    permissions: {
+                        printing: allowPrint ? 'allowAll' : 'denyAll',
+                        modifying: false,
+                        copying: allowCopy,
+                        annotating: false,
+                        fillingForms: false,
+                        contentAccessibility: false,
+                        assembling: false
+                    }
+                });
+                downloadFile(pdfBytes, currentPdfName.replace('.pdf', '_encrypted.pdf'));
+            } catch (error) {
+                alert('Encryption failed: ' + error.message);
+            }
+        }
+
+        // Tab 6: Metadata
+        document.getElementById('meta-upload-area').addEventListener('click', () => {
+            document.getElementById('meta-file').click();
+        });
+
+        document.getElementById('meta-file').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                currentPdfBytes = await fileToArrayBuffer(file);
+                currentPdfName = file.name;
+                const { PDFDocument } = PDFLib;
+                const pdf = await PDFDocument.load(currentPdfBytes);
+                const metadata = pdf.getTitle() || pdf.getSubject() || pdf.getAuthor() || pdf.getCreator() || pdf.getProducer() || {};
+
+                const displayDiv = document.getElementById('meta-display');
+                displayDiv.innerHTML = `
+                    <div class="metadata-display">
+                        <h3>Current Metadata:</h3>
+                        <p><strong>Title:</strong> ${pdf.getTitle() || '(None)'}</p>
+                        <p><strong>Author:</strong> ${pdf.getAuthor() || '(None)'}</p>
+                        <p><strong>Subject:</strong> ${pdf.getSubject() || '(None)'}</p>
+                        <p><strong>Keywords:</strong> ${pdf.getKeywords() || '(None)'}</p>
+                        <p><strong>Producer:</strong> ${pdf.getProducer() || '(None)'}</p>
+                        <p><strong>Creator:</strong> ${pdf.getCreator() || '(None)'}</p>
+                    </div>
+                `;
+
+                document.getElementById('meta-title').value = pdf.getTitle() || '';
+                document.getElementById('meta-author').value = pdf.getAuthor() || '';
+                document.getElementById('meta-subject').value = pdf.getSubject() || '';
+                document.getElementById('meta-keywords').value = pdf.getKeywords() || '';
+                document.getElementById('meta-producer').value = pdf.getProducer() || '';
+                document.getElementById('meta-creator').value = pdf.getCreator() || '';
+
+                document.getElementById('meta-controls').style.display = 'block';
+            } catch (error) {
+                alert('Read failed: File may be corrupted or password-protected.');
+            }
+        });
+
+        async function updateMetadata() {
+            if (!currentPdfBytes) return;
+
+            try {
+                const { PDFDocument } = PDFLib;
+                const pdf = await PDFDocument.load(currentPdfBytes);
+
+                const title = document.getElementById('meta-title').value;
+                const author = document.getElementById('meta-author').value;
+                const subject = document.getElementById('meta-subject').value;
+                const keywords = document.getElementById('meta-keywords').value;
+                const producer = document.getElementById('meta-producer').value;
+                const creator = document.getElementById('meta-creator').value;
+
+                if (title) pdf.setTitle(title);
+                if (author) pdf.setAuthor(author);
+                if (subject) pdf.setSubject(subject);
+                if (keywords) pdf.setKeywords(keywords);
+                if (producer) pdf.setProducer(producer);
+                if (creator) pdf.setCreator(creator);
+
+                const now = new Date();
+                pdf.setModificationDate(now);
+
+                const pdfBytes = await pdf.save();
+                downloadFile(pdfBytes, currentPdfName.replace('.pdf', '_meta.pdf'));
+            } catch (error) {
+                alert('Update failed: ' + error.message);
+            }
+        }
+
+        // Drag and drop handlers
+        ['read-upload-area', 'merge-upload-area', 'split-upload-area', 'reorder-upload-area', 'rotate-upload-area', 'encrypt-upload-area', 'meta-upload-area'].forEach(id => {
+            const area = document.getElementById(id);
+            area.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                area.classList.add('dragover');
+            });
+            area.addEventListener('dragleave', () => {
+                area.classList.remove('dragover');
+            });
+            area.addEventListener('drop', (e) => {
+                e.preventDefault();
+                area.classList.remove('dragover');
+                const files = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.pdf'));
+                if (files.length > 0) {
+                    const input = area.querySelector('input[type="file"]');
+                    const dataTransfer = new DataTransfer();
+                    files.forEach(f => dataTransfer.items.add(f));
+                    input.files = dataTransfer.files;
+                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF Toolbox: Read / Merge / Split / Edit</title>
+    <!-- Shared Theme: Light Yellow & Light Purple -->
+    <link rel="stylesheet" href="theme.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
     <style>
@@ -15,7 +17,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #e9d5ff 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -30,8 +32,8 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #e9d5ff 100%);
+            color: #4a5568;
             padding: 30px;
             text-align: center;
         }
@@ -42,7 +44,7 @@
         }
 
         .header p {
-            opacity: 0.9;
+            color: #666;
             font-size: 1.1em;
         }
 
@@ -71,8 +73,8 @@
 
         .tab.active {
             background: white;
-            color: #667eea;
-            border-bottom: 3px solid #667eea;
+            color: #a78bfa;
+            border-bottom: 3px solid #fde68a;
         }
 
         .tab-content {
@@ -85,23 +87,23 @@
         }
 
         .upload-area {
-            border: 3px dashed #667eea;
+            border: 3px dashed #fde68a;
             border-radius: 12px;
             padding: 40px;
             text-align: center;
-            background: #f8f9ff;
+            background: #fffbeb;
             transition: all 0.3s;
             cursor: pointer;
         }
 
         .upload-area:hover {
-            background: #f0f2ff;
-            border-color: #764ba2;
+            background: #fef9c3;
+            border-color: #ddd6fe;
         }
 
         .upload-area.dragover {
-            background: #e8ebff;
-            border-color: #764ba2;
+            background: #fef3c7;
+            border-color: #ddd6fe;
             transform: scale(1.02);
         }
 
@@ -120,13 +122,14 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, #fde68a 0%, #fcd34d 50%, #e9d5ff 100%);
+            color: #4a5568;
+            font-weight: 600;
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgba(253, 230, 138, 0.4);
         }
 
         .btn-secondary {
@@ -204,7 +207,7 @@
         .form-group select:focus,
         .form-group textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #fde68a;
         }
 
         .alert {
